@@ -16,6 +16,7 @@ limitations under the License.
 */
 
 #include <stdio.h>
+#include <string.h>
 #include "sdkconfig.h"
 #include <math.h>
 #include "freertos/FreeRTOS.h"
@@ -80,6 +81,7 @@ static const char __attribute__((unused)) *TAG = "app_display_valeton";
 
 #if CONFIG_TONEX_CONTROLLER_DISPLAY_FULL_UI          
     static lv_obj_t* edit_object = NULL;
+    static lv_obj_t* selected_effect_frame = NULL;
 #endif    
 
 /****************************************************************************
@@ -159,6 +161,47 @@ void valeton_action_effect_icon_clicked(lv_event_t * e)
 
     if (event_code == LV_EVENT_SHORT_CLICKED) 
     {
+        
+        if (selected_effect_frame == NULL)
+        {
+            selected_effect_frame =
+                lv_obj_create(lv_obj_get_parent(event_object));
+
+            lv_obj_set_style_bg_opa(
+                selected_effect_frame,
+                LV_OPA_TRANSP,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_border_color(
+                selected_effect_frame,
+                lv_color_hex(0xd1a60c),
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_border_opa(
+                selected_effect_frame,
+                LV_OPA_COVER,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_border_width(
+                selected_effect_frame,
+                2,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_radius(
+                selected_effect_frame,
+                5,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_clear_flag(
+                selected_effect_frame,
+                LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+        }
+
+        lv_obj_set_pos(
+            selected_effect_frame,
+            lv_obj_get_x(event_object) - 4,
+            lv_obj_get_y(event_object) - 4);
+        lv_obj_set_size(
+            selected_effect_frame,
+            lv_obj_get_width(event_object) + 8,
+            lv_obj_get_height(event_object) + 8);
+        lv_obj_move_foreground(selected_effect_frame);
+
         if (event_object == objects.ui_icon_val_pre)
         {
             ESP_LOGI(TAG, "UI Toggle Pre");
@@ -781,8 +824,15 @@ void valeton_update_icon_order(void)
 #if CONFIG_TONEX_CONTROLLER_DISPLAY_FULL_UI          
     tModellerParameter* param_ptr;
     lv_obj_t* icons[VALETON_EFFECT_BLOCK_LAST];
+
+    static lv_obj_t* valeton_covers[4] = {0};
+    static lv_obj_t* valeton_bank_title = NULL;
+    static lv_obj_t* valeton_bank_value = NULL;
+    static lv_obj_t* valeton_bpm_title = NULL;
+    static lv_obj_t* valeton_bpm_value = NULL;
+
     uint8_t index = 0;
-    int16_t offsets[VALETON_EFFECT_BLOCK_LAST];
+    //int16_t offsets[VALETON_EFFECT_BLOCK_LAST];
 
     ESP_LOGI(TAG, "Update effect icon order");
 
@@ -849,7 +899,7 @@ void valeton_update_icon_order(void)
 
         valeton_params_release_locked_access();
         
-        platform_get_icon_coords(offsets, sizeof(offsets) / sizeof(int16_t));
+        /*platform_get_icon_coords(offsets, sizeof(offsets) / sizeof(int16_t));
 
         // update X pos of each to set the correct order
         for (uint8_t i = 0; i < VALETON_EFFECT_BLOCK_LAST; i++)
@@ -857,6 +907,174 @@ void valeton_update_icon_order(void)
             lv_obj_t* icon = icons[i];
             int16_t offset = offsets[i];
             lv_obj_set_x(icon, offset);
+        }*/
+        // Ajusta o painel Valeton à área livre da tela 480x320.
+        lv_obj_set_pos(objects.ui_bottom_panel_valeton, 0, 0);
+        lv_obj_set_size(objects.ui_bottom_panel_valeton, 480, 320);
+        lv_obj_set_style_bg_opa(objects.ui_bottom_panel_valeton,
+                                 LV_OPA_TRANSP, LV_PART_MAIN);
+        lv_obj_set_style_border_width(objects.ui_bottom_panel_valeton,
+                                      0, LV_PART_MAIN);
+
+        // Máscaras exclusivas da tela Valeton: cobrem a logo, o título,
+        // o título antigo do preset e os Bank/BPM antigos.
+        const lv_coord_t cover_x[4] = {0, 0, 0, 360};
+        const lv_coord_t cover_y[4] = {0, 39, 78, 78};
+        const lv_coord_t cover_w[4] = {330, 480, 100, 120};
+        const lv_coord_t cover_h[4] = {39, 39, 68, 68};
+        const uint32_t cover_color[4] = {
+            0x2a2a2a, 0x1f1f1f, 0x1f1f1f, 0x1f1f1f
+        };
+
+        if (valeton_covers[0] == NULL)
+        {
+            for (uint8_t i = 0; i < 4; i++)
+            {
+                valeton_covers[i] =
+                    lv_obj_create(objects.ui_bottom_panel_valeton);
+                lv_obj_set_pos(valeton_covers[i], cover_x[i], cover_y[i]);
+                lv_obj_set_size(valeton_covers[i], cover_w[i], cover_h[i]);
+                lv_obj_set_style_bg_color(
+                    valeton_covers[i],
+                    lv_color_hex(cover_color[i]),
+                    LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_bg_opa(
+                    valeton_covers[i],
+                    LV_OPA_COVER,
+                    LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_border_width(
+                    valeton_covers[i],
+                    0,
+                    LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_set_style_radius(
+                    valeton_covers[i],
+                    0,
+                    LV_PART_MAIN | LV_STATE_DEFAULT);
+                lv_obj_clear_flag(
+                    valeton_covers[i],
+                    LV_OBJ_FLAG_SCROLLABLE | LV_OBJ_FLAG_CLICKABLE);
+
+                // Deixa a máscara atrás dos ícones da Valeton.
+                lv_obj_move_to_index(valeton_covers[i], 0);
+            }
+
+            // Remove as duas faixas do cabeçalho.
+            lv_obj_add_flag(valeton_covers[0], LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(valeton_covers[1], LV_OBJ_FLAG_HIDDEN);
+
+            valeton_bank_title =
+                lv_label_create(objects.ui_bottom_panel_valeton);
+            lv_obj_set_pos(valeton_bank_title, 12, 276);
+            lv_obj_set_size(valeton_bank_title, 40, LV_SIZE_CONTENT);
+            lv_label_set_text(valeton_bank_title, "Bank");
+            lv_obj_set_style_text_color(
+                valeton_bank_title,
+                lv_color_hex(0xd1a60c),
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_font(
+                valeton_bank_title,
+                &lv_font_montserrat_14,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(
+                valeton_bank_title,
+                LV_TEXT_ALIGN_CENTER,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+
+            valeton_bank_value =
+                lv_label_create(objects.ui_bottom_panel_valeton);
+            lv_obj_set_pos(valeton_bank_value, 54, 274);
+            lv_obj_set_size(valeton_bank_value, 26, LV_SIZE_CONTENT);
+            lv_obj_set_style_text_color(
+                valeton_bank_value,
+                lv_color_hex(0xffffff),
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_font(
+                valeton_bank_value,
+                &lv_font_montserrat_18,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(
+                valeton_bank_value,
+                LV_TEXT_ALIGN_CENTER,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+
+            valeton_bpm_title =
+                lv_label_create(objects.ui_bottom_panel_valeton);
+            lv_obj_set_pos(valeton_bpm_title, 180, 276);
+            lv_obj_set_size(valeton_bpm_title, 44, LV_SIZE_CONTENT);
+            lv_label_set_text(valeton_bpm_title, "BPM");
+            lv_obj_set_style_text_color(
+                valeton_bpm_title,
+                lv_color_hex(0xd1a60c),
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_font(
+                valeton_bpm_title,
+                &lv_font_montserrat_14,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(
+                valeton_bpm_title,
+                LV_TEXT_ALIGN_CENTER,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+
+            valeton_bpm_value =
+                lv_label_create(objects.ui_bottom_panel_valeton);
+            lv_obj_set_pos(valeton_bpm_value, 224, 274);
+            lv_obj_set_size(valeton_bpm_value, 80, LV_SIZE_CONTENT);
+            lv_obj_set_style_text_color(
+                valeton_bpm_value,
+                lv_color_hex(0xffffff),
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_font(
+                valeton_bpm_value,
+                &lv_font_montserrat_18,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(
+                valeton_bpm_value,
+                LV_TEXT_ALIGN_CENTER,
+                LV_PART_MAIN | LV_STATE_DEFAULT);
+        }
+
+        // Atualiza os textos próprios da tela Valeton.
+
+        const char* bank_text =
+            lv_label_get_text(objects.ui_bank_value_label);
+        const char* bpm_text =
+            lv_label_get_text(objects.ui_bpm_value_label);
+
+        if (strcmp(lv_label_get_text(valeton_bank_value), bank_text) != 0)
+            lv_label_set_text(valeton_bank_value, bank_text);
+
+        if (strcmp(lv_label_get_text(valeton_bpm_value), bpm_text) != 0)
+            lv_label_set_text(valeton_bpm_value, bpm_text);
+
+        // Ajusta o cabeçalho somente para a tela Valeton.
+        lv_obj_add_flag(objects.ui_ik_logo, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(objects.ui_project_heading_label, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_add_flag(objects.ui_bpm_indicator, LV_OBJ_FLAG_HIDDEN);
+
+        lv_obj_set_pos(objects.ui_preset_heading_label, 8, 2);
+        lv_obj_set_size(objects.ui_preset_heading_label, 318, 35);
+        lv_obj_set_style_text_font(objects.ui_preset_heading_label,
+                                   &lv_font_montserrat_22,
+                                   LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_text_align(objects.ui_preset_heading_label,
+                                    LV_TEXT_ALIGN_LEFT,
+                                    LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_move_foreground(objects.ui_preset_heading_label);
+
+        // Mantém o botão de configurações na faixa inferior.
+        lv_obj_set_pos(objects.ui_val_settings, 417, 260);
+
+        // Organiza os dez efeitos em duas fileiras de cinco.
+        for (uint8_t i = 0; i < VALETON_EFFECT_BLOCK_LAST; i++)
+        {
+            lv_obj_t* icon = icons[i];
+            uint8_t col = i % 5;
+            uint8_t row = i / 5;
+
+            lv_obj_set_pos(icon, 58 + (col * 78), 50 + (row * 100));
+            lv_img_set_zoom(icon, 280);
+
         }
     }
 #endif    

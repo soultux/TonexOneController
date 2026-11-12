@@ -601,6 +601,11 @@ void action_enable_skin_edit(lv_event_t * e)
 {
     ESP_LOGI(TAG, "UI Skin edit mode");
 
+    if (usb_get_connected_modeller_type() == AMP_MODELLER_VALETON_GP5)
+    {
+        lv_obj_clear_flag(objects.ui_skins, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(objects.ui_preset_details_text_area, LV_OBJ_FLAG_HIDDEN);
+    }
     lv_obj_clear_flag(objects.ui_left_arrow, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_flag(objects.ui_right_arrow, LV_OBJ_FLAG_HIDDEN);
     lv_obj_clear_state(objects.ui_preset_details_text_area, LV_STATE_DISABLED);
@@ -642,7 +647,12 @@ void action_save_skin_edit(lv_event_t * e)
     {
         lv_obj_clear_flag(objects.ui_bpm_indicator, LV_OBJ_FLAG_HIDDEN);
     }
-#endif    
+#endif
+    if (usb_get_connected_modeller_type() == AMP_MODELLER_VALETON_GP5)
+    {
+        lv_obj_add_flag(objects.ui_skins, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(objects.ui_preset_details_text_area, LV_OBJ_FLAG_HIDDEN);
+    }    
 }
 
 /****************************************************************************
@@ -1352,6 +1362,10 @@ static  __attribute__((unused)) uint8_t update_ui_element(tUIUpdate* update)
 #if CONFIG_TONEX_CONTROLLER_DISPLAY_FULL_UI                                                            
                         lv_obj_add_flag(objects.ui_bottom_panel_tonex, LV_OBJ_FLAG_HIDDEN);
                         lv_obj_clear_flag(objects.ui_bottom_panel_valeton, LV_OBJ_FLAG_HIDDEN);
+
+                        // INSERIR estas duas linhas
+                        lv_obj_add_flag(objects.ui_skins, LV_OBJ_FLAG_HIDDEN);
+                        lv_obj_add_flag(objects.ui_preset_details_text_area, LV_OBJ_FLAG_HIDDEN);
 
                         lv_label_set_text(objects.ui_project_heading_label, "Valeton Controller"); 
 #else            
